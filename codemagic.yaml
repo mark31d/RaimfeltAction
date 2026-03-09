@@ -1,69 +1,69 @@
 workflows:
-  ios-workflow:
-    name: Raimfelt Action
+  react-native-ios:
+    name: React Native iOS
     max_build_duration: 120
-    integrations:
-      app_store_connect: RaimfeltActionAPIKey
+    instance_type: mac_mini_m1
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.RaimfeltAction
+      groups:
+        - app_store_credentials
       vars:
-        APP_STORE_APPLE_ID: 6759666553
-        XCODE_WORKSPACE: RaimfeltAction.xcworkspace
-        CODE_SCHEME: RaimfeltAction
+        XCODE_WORKSPACE: 'RaimfeltAction.xcworkspace'
+        XCODE_SCHEME: 'RaimfeltAction'
+        BUNDLE_ID: 'com.RaynfletActive'
+        APP_STORE_APP_ID: 6760298900
+        APP_STORE_CONNECT_KEY_ID: '2UHGLL23S5'
+        APP_STORE_CONNECT_ISSUER_ID: '54fd8889-4c5a-4cc1-99a1-f5c3024350a2'
+        node: latest
+        xcode: latest
+        cocoapods: default
+    triggering:
+      events:
+        - push12312
+        - tag
+        - pull_request
+      branch_patterns:
+        - pattern: develop
+          include: true
+          source: true
     scripts:
-      - name: Install node modules
-        script: |
-          npm install
-
+      - name: Install npm dependencies
+        script: npm install --force
       - name: Install CocoaPods dependencies
+        script: cd ios && pod install
+      - name: Set up keychain for code signing
+        script: keychain initialize
+      - name: Fetch signing files
+        script: app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+      - name: Use system default keychain
+        script: keychain add-certificates
+      - name: Increment build number
         script: |
-          cd ios
-          pod install
-
-      - name: Use provisioning profiles
-        script: |
-          cd ios
-          xcode-project use-profiles
-
-      - name: Get BUILD_NUMBER
-        script: |
-          BUILD_NUMBER=$(date +%s)
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$CM_ENV_FILE"
-          echo "BUILD_NUMBER=$BUILD_NUMBER"
-
-      - name: Set CFBundleVersion
-        script: |
-          PLIST_PATH="$CM_BUILD_DIR/ios/RaimfeltAction/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST_PATH" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_NUMBER" "$PLIST_PATH"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST_PATH"
-
-      - name: Add ITSAppUsesNonExemptEncryption
-        script: |
-          PLIST_PATH="$CM_BUILD_DIR/ios/RaimfeltAction/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST_PATH" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST_PATH"
-
-      - name: Build ipa for distribution
-        script: |
-          xcode-project build-ipa \
-            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
-            --scheme "$CODE_SCHEME"
-
-      - name: Verify CFBundleVersion in IPA
-        script: |
-          IPA_PATH=$(find build -name "*.ipa" | head -n 1)
-          unzip -p "$IPA_PATH" "Payload/RaimfeltAction.app/Info.plist" | plutil -p - | grep CFBundleVersion || true
-
+          cd $CM_BUILD_DIR/ios
+          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
+      - name: Set up code signing settings in Xcode project
+        script: xcode-project use-profiles --warn-only
+      - name: Build IPA for distribution
+        script: xcode-project build-ipa --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME" --archive-flags="-destination 'generic/platform=iOS'"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-
     publishing:
+      email:
+        recipients:
+          - markdashevskiy31@gmail.com
+        notify:
+          success: true
+          failure: false
+      slack:
+        channel: '#builds'
+        notify_on_build_start: true
+        notify:
+          success: true
+          failure: false
       app_store_connect:
-        auth: integration
-        submit_to_app_store: false
+        api_key: '$APP_STORE_CONNECT_PRIVATE_KEY'
+        key_id: '$APP_STORE_CONNECT_KEY_ID'
+        issuer_id: '$APP_STORE_CONNECT_ISSUER_ID'
+        submit_to_testflight: true

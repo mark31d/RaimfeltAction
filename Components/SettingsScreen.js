@@ -166,7 +166,7 @@ export default function SettingsScreen({ navigation }) {
         {/* ── App info ── */}
         <Text style={s.sectionLabel}>APP INFO</Text>
         <View style={s.card}>
-          <Row label="App"     value="RaimfeltAction" />
+          <Row label="App"     value="Raynflet Active" />
           <Row label="Version" value="1.0.0" />
           <Row label="Storage" value="Local (on-device)" />
         </View>

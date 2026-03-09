@@ -83,7 +83,7 @@ export default function WorkoutsScreen({ navigation }) {
         {/* ── Plans tab ── */}
         {activeTab === 'Plans' && (
           <>
-            {workoutPlans.length === 0 ? (
+            {appState.workoutPlan.length === 0 ? (
               <EmptyState
                 message="No workout plans yet"
                 sub="Create a plan to schedule your weekly training"

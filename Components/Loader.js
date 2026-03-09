@@ -150,7 +150,7 @@ export default function Loader({ spinnerDuration = 2000 }) {
         <Path d={morphPath} fill={COLOR} />
       </Svg>
 
-      <Text style={styles.name}>RaimfeltAction</Text>
+      <Text style={styles.name}>Raynflet Active</Text>
       <Text style={styles.tagline}>Train. Track. Thrive.</Text>
     </LinearGradient>
   );
