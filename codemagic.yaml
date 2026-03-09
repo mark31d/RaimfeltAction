@@ -18,7 +18,7 @@ workflows:
         cocoapods: default
     triggering:
       events:
-        - push12312
+        - push
         - tag
         - pull_request
       branch_patterns:
